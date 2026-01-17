@@ -18,7 +18,6 @@ app.post("/", async (req, res) => {
     console.log("📦 RAW TILDA DATA:");
     console.log(req.body);
 
-    // Парсим payment из Tilda
     if (!req.body.payment) {
       console.log("❌ payment not found");
       return res.status(200).send("OK");
@@ -41,34 +40,30 @@ app.post("/", async (req, res) => {
     const deliveryAddress = payment.delivery_address;
     const deliveryComment = payment.delivery_comment || "";
 
-    // ❗ ОБЯЗАТЕЛЬНО реальный адрес точки А
-    const shopAddress = "Москва, ул. Тверская, 1";
+    // 🔥 Чистим адрес от "RU:"
+    const cleanAddress = deliveryAddress.replace(/^RU:\s*/i, "").trim();
 
-    // Формируем заказ для Dostavista
-// Чистим адрес от "RU:"
-const cleanAddress = address.replace(/^RU:\s*/i, "").trim();
-
-const dostavistaPayload = {
-  matter: `Заказ №${payment.orderid}`,
-  vehicle_type_id: 6, // пеший курьер
-  points: [
-    {
-      address: cleanAddress,
-      contact_person: {
-        name: customerName,
-        phone: customerPhone
-      }
-    },
-    {
-      address: cleanAddress,
-      contact_person: {
-        name: customerName,
-        phone: customerPhone
-      },
-      note: comment
-    }
-  ]
-};
+    const dostavistaPayload = {
+      matter: `Заказ №${payment.orderid}`,
+      vehicle_type_id: 6, // пеший курьер
+      points: [
+        {
+          address: cleanAddress,
+          contact_person: {
+            name: customerName,
+            phone: customerPhone
+          }
+        },
+        {
+          address: cleanAddress,
+          contact_person: {
+            name: customerName,
+            phone: customerPhone
+          },
+          note: deliveryComment
+        }
+      ]
+    };
 
     console.log("🚚 DOSTAVISTA REQUEST:");
     console.log(dostavistaPayload);
@@ -98,7 +93,6 @@ const dostavistaPayload = {
       console.error(error.message);
     }
 
-    // Tilda всегда должна получить 200
     res.status(200).send("OK");
   }
 });
@@ -107,4 +101,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
 });
-
