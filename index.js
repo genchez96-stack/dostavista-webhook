@@ -53,26 +53,27 @@ const dostavistaPayload = {
   vehicle_type_id: 6, // пеший курьер
   points: [
     {
-      type: "source", // 🔴 ОБЯЗАТЕЛЬНО
+      type: "source",
+      city_id: 1, // Москва
       address: shopAddress,
       contact_person: {
         name: "Магазин",
-        phone: "+79999999999" // 🔴 формат +7...
+        phone: "+79999999999"
       }
     },
     {
-      type: "destination", // 🔴 ОБЯЗАТЕЛЬНО
+      type: "destination",
+      city_id: 1, // Москва
       address: cleanDeliveryAddress,
       contact_person: {
         name: customerName,
-        phone: customerPhone.startsWith("+")
-          ? customerPhone
-          : `+7${customerPhone.replace(/\D/g, "")}`
+        phone: customerPhone
       },
       note: deliveryComment
     }
   ]
 };
+
 
 
     console.log("🚚 DOSTAVISTA REQUEST:");
