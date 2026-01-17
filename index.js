@@ -1,77 +1,100 @@
 import express from "express";
+import axios from "axios";
 
 const app = express();
 
-/**
- * Tilda отправляет данные как application/x-www-form-urlencoded
- * Поэтому ОБЯЗАТЕЛЬНО включаем оба парсера
- */
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-/**
- * Проверка, что сервер жив
- * (можно открыть в браузере)
- */
+// Проверка, что сервер жив
 app.get("/", (req, res) => {
   res.send("OK");
 });
 
-/**
- * Основной webhook от Tilda
- */
 app.post("/", async (req, res) => {
   try {
     console.log("📦 RAW TILDA DATA:");
     console.log(req.body);
 
-    // payment приходит как строка → превращаем в объект
-    let paymentData = null;
+    // Парсим payment
+    const payment = req.body.payment ? JSON.parse(req.body.payment) : null;
 
-    if (req.body.payment) {
-      paymentData = JSON.parse(req.body.payment);
-
-      console.log("💳 PARSED PAYMENT DATA:");
-      console.log(paymentData);
-    } else {
-      console.log("⚠️ payment field not found");
+    if (!payment) {
+      console.log("❌ payment not found");
+      return res.status(200).send("OK");
     }
 
-    /**
-     * Для наглядности вытащим ключевые поля
-     */
-    const result = {
-      orderId: paymentData?.orderid || null,
-      deliveryType: paymentData?.delivery || null,
-      deliveryAddress: paymentData?.delivery_address || null,
-      deliveryComment: paymentData?.delivery_comment || null,
-      customerName: req.body.Name || null,
-      customerPhone: req.body.Phone || null,
-      amount: paymentData?.amount || null,
+    console.log("💳 PAYMENT DATA:");
+    console.log(payment);
+
+    // Данные клиента
+    const customerName = payment.delivery_fio || req.body.Name || "Клиент";
+    const customerPhone = req.body.Phone;
+    const address = payment.delivery_address;
+    const comment = payment.delivery_comment || "";
+
+    // Защита: если это не Достависта — выходим
+    if (!payment.delivery || !payment.delivery.includes("Достависта")) {
+      console.log("ℹ️ Not Dostavista delivery, skipping");
+      return res.status(200).send("OK");
+    }
+
+    // Формируем заказ для Dostavista
+    const dostavistaPayload = {
+      matter: `Заказ №${payment.orderid}`,
+      vehicle_type: "foot",
+      points: [
+        {
+          address: "Москва, склад продавца",
+          contact_person: {
+            name: "Магазин",
+            phone: "+79999999999"
+          }
+        },
+        {
+          address: address,
+          contact_person: {
+            name: customerName,
+            phone: customerPhone
+          },
+          note: comment
+        }
+      ]
     };
 
-    console.log("📋 EXTRACTED ORDER DATA:");
-    console.log(result);
+    console.log("🚚 DOSTAVISTA REQUEST:");
+    console.log(dostavistaPayload);
 
-    /**
-     * ПОКА НИЧЕГО НЕ ОТПРАВЛЯЕМ
-     * Просто подтверждаем Tilda, что всё ок
-     */
+    const response = await axios.post(
+      "https://robotapitest.dostavista.ru/api/business/1.5/create-order",
+      dostavistaPayload,
+      {
+        headers: {
+          "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("✅ DOSTAVISTA RESPONSE:");
+    console.log(response.data);
+
     res.status(200).send("OK");
   } catch (error) {
-    console.error("❌ ERROR IN WEBHOOK:");
-    console.error(error);
+    console.error("❌ ERROR:");
 
-    res.status(500).send("ERROR");
+    if (error.response) {
+      console.error(error.response.status);
+      console.error(error.response.data);
+    } else {
+      console.error(error.message);
+    }
+
+    res.status(200).send("OK");
   }
 });
 
-/**
- * Render сам передаёт PORT
- */
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
 });
-
