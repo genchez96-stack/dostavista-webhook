@@ -1,4 +1,5 @@
 console.log("🔥 VERSION: 2026-01-17 — FINAL DOCS SAFE");
+console.log("AUTH TOKEN:", process.env.DOSTAVISTA_API_KEY); // Добавьте эту строку перед axios.post
 
 import express from "express";
 import axios from "axios";
