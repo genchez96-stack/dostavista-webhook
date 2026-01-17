@@ -6,7 +6,7 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// health check
+// Проверка, что сервер жив
 app.get("/", (req, res) => {
   res.send("OK");
 });
@@ -16,9 +16,10 @@ app.post("/", async (req, res) => {
     console.log("📦 RAW TILDA DATA:");
     console.log(req.body);
 
+    // Парсим payment из Tilda
     if (!req.body.payment) {
       console.log("❌ payment not found");
-      return res.send("OK");
+      return res.status(200).send("OK");
     }
 
     const payment = JSON.parse(req.body.payment);
@@ -26,31 +27,31 @@ app.post("/", async (req, res) => {
     console.log("💳 PAYMENT DATA:");
     console.log(payment);
 
-    // Проверка доставки
+    // Проверяем, что доставка — Достависта
     if (!payment.delivery || !payment.delivery.includes("Достависта")) {
-      console.log("ℹ️ Not Dostavista delivery");
-      return res.send("OK");
+      console.log("ℹ️ Not Dostavista delivery, skipping");
+      return res.status(200).send("OK");
     }
 
     // Данные клиента
-    const customerName =
-      payment.delivery_fio || req.body.Name || "Клиент";
-    const customerPhone = req.body.Phone || "+79999999999";
-
-    // ❗ ЧИСТИМ АДРЕС
-    const deliveryAddress = payment.delivery_address
-      .replace(/^RU:\s*/i, "")
-      .trim();
-
+    const customerName = payment.delivery_fio || req.body.Name || "Клиент";
+    const customerPhone = req.body.Phone;
+    const deliveryAddress = payment.delivery_address;
     const deliveryComment = payment.delivery_comment || "";
 
-    // ✅ ПРАВИЛЬНЫЙ PAYLOAD
+    // ❗ ОБЯЗАТЕЛЬНО реальный адрес точки А
+    const shopAddress = "Москва, ул. Тверская, 1";
+
+    // Формируем заказ для Dostavista
     const dostavistaPayload = {
       matter: `Заказ №${payment.orderid}`,
-      vehicle_type: "courier",
+
+      // ✅ ПЕШИЙ КУРЬЕР
+      vehicle_type_id: 6,
+
       points: [
         {
-          address: "Москва, ул. Тверская, 1",
+          address: shopAddress,
           contact_person: {
             name: "Магазин",
             phone: "+79999999999"
@@ -71,7 +72,7 @@ app.post("/", async (req, res) => {
     console.log(dostavistaPayload);
 
     const response = await axios.post(
-      `${process.env.DOSTAVISTA_API_URL}/create-order`,
+      "https://robotapitest.dostavista.ru/api/business/1.5/create-order",
       dostavistaPayload,
       {
         headers: {
@@ -84,18 +85,19 @@ app.post("/", async (req, res) => {
     console.log("✅ DOSTAVISTA RESPONSE:");
     console.log(response.data);
 
-    res.send("OK");
+    res.status(200).send("OK");
   } catch (error) {
-    console.error("❌ ERROR");
+    console.error("❌ ERROR:");
 
     if (error.response) {
-      console.error(error.response.status);
-      console.error(error.response.data);
+      console.error("STATUS:", error.response.status);
+      console.error("DATA:", error.response.data);
     } else {
       console.error(error.message);
     }
 
-    res.send("OK");
+    // Tilda всегда должна получить 200
+    res.status(200).send("OK");
   }
 });
 
