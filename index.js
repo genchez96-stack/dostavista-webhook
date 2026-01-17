@@ -58,17 +58,17 @@ app.post("/", async (req, res) => {
 
     console.log("🚚 DOSTAVISTA REQUEST:", dostavistaPayload);
 
-    const response = await axios.post(
-      "https://robot.dostavista.ru/api/business/1.5/create-order", // ❗ PROD
-      dostavistaPayload,
-      {
-     headers: {
-  Authorization: `Bearer ${process.env.DOSTAVISTA_API_KEY}`,
-  "Content-Type": "application/json"
-}
+ const response = await axios.post(
+  "https://robotapitest.dostavista.ru/api/business/1.5/create-order",
+  dostavistaPayload,
+  {
+    headers: {
+      "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
+      "Content-Type": "application/json"
+    }
+  }
+);
 
-      }
-    );
     
 
     console.log("✅ DOSTAVISTA RESPONSE:", response.data);
