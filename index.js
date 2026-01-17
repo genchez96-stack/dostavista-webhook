@@ -1,4 +1,5 @@
 console.log("🔥 VERSION: 2026-01-17 — FINAL");
+console.log("🔐 AUTH HEADER:", `Bearer ${process.env.DOSTAVISTA_API_KEY}`);
 
 import express from "express";
 import axios from "axios";
@@ -61,12 +62,14 @@ app.post("/", async (req, res) => {
       "https://robot.dostavista.ru/api/business/1.5/create-order", // ❗ PROD
       dostavistaPayload,
       {
-        headers: {
-          "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
-          "Content-Type": "application/json"
-        }
+     headers: {
+  Authorization: `Bearer ${process.env.DOSTAVISTA_API_KEY}`,
+  "Content-Type": "application/json"
+}
+
       }
     );
+    
 
     console.log("✅ DOSTAVISTA RESPONSE:", response.data);
     res.status(200).send("OK");
