@@ -1,4 +1,4 @@
-console.log("🔥 VERSION: 2026-01-17 — FINAL WORKING");
+console.log("🔥 VERSION: 2026-01-17 — FINAL DOCS SAFE");
 
 import express from "express";
 import axios from "axios";
@@ -8,13 +8,12 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+/**
+ * Проверка, что сервер жив
+ */
 app.get("/", (req, res) => {
   res.send("OK");
 });
-
-function normalizePhone(phone) {
-  return phone.replace(/\D/g, "");
-}
 
 app.post("/", async (req, res) => {
   try {
@@ -28,46 +27,57 @@ app.post("/", async (req, res) => {
     const payment = JSON.parse(req.body.payment);
     console.log("💳 PAYMENT DATA:", payment);
 
-    if (!payment.delivery?.includes("Достависта")) {
-      console.log("ℹ️ Not Dostavista delivery");
+    // Проверяем, что доставка — Достависта
+    if (!payment.delivery || !payment.delivery.includes("Достависта")) {
+      console.log("ℹ️ Not Dostavista delivery, skipping");
       return res.status(200).send("OK");
     }
 
-    const customerName = payment.delivery_fio || "Клиент";
-    const customerPhone = normalizePhone(req.body.Phone);
-    const shopPhone = normalizePhone("79999999999");
+    // Клиент
+    const customerName =
+      payment.delivery_fio || req.body.Name || "Клиент";
+    const customerPhone = req.body.Phone || "79999999999";
 
+    // Чистим адрес от RU:
     const cleanDeliveryAddress = payment.delivery_address
       .replace(/^RU:\s*/i, "")
       .trim();
 
+    const deliveryComment = payment.delivery_comment || "";
+
+    // Точка А — ОБЯЗАТЕЛЬНО реальный адрес
     const shopAddress = "Москва, улица Космонавтов, 22";
 
+    // ===== DOSTAVISTA PAYLOAD (ПО ДОКУМЕНТАЦИИ) =====
     const dostavistaPayload = {
       matter: `Заказ №${payment.orderid}`,
       vehicle_type_id: 6, // пеший курьер
       points: [
         {
+          type: "source",
           address: shopAddress,
           contact_person: {
             name: "Магазин",
-            phone: shopPhone
+            phone: "79999999999"
           }
         },
         {
+          type: "destination",
           address: cleanDeliveryAddress,
           contact_person: {
             name: customerName,
             phone: customerPhone
           },
-          note: payment.delivery_comment || ""
+          note: deliveryComment
         }
       ]
     };
 
-    console.log("🚚 DOSTAVISTA REQUEST:", dostavistaPayload);
+    console.log("🚚 DOSTAVISTA REQUEST:", JSON.stringify(dostavistaPayload, null, 2));
+
     console.log("🧪 AXIOS HEADERS:", {
-      "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY
+      "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
+      "Content-Type": "application/json"
     });
 
     const response = await axios.post(
@@ -82,8 +92,8 @@ app.post("/", async (req, res) => {
     );
 
     console.log("✅ DOSTAVISTA RESPONSE:", response.data);
-    res.status(200).send("OK");
 
+    res.status(200).send("OK");
   } catch (error) {
     console.error("❌ ERROR:");
 
@@ -94,6 +104,7 @@ app.post("/", async (req, res) => {
       console.error(error.message);
     }
 
+    // Tilda всегда должна получить 200
     res.status(200).send("OK");
   }
 });
@@ -102,3 +113,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
 });
+
