@@ -1,5 +1,5 @@
 console.log("🔥 VERSION: 2026-01-17 — FINAL");
-console.log("🔐 AUTH HEADER:", `Bearer ${process.env.DOSTAVISTA_API_KEY}`);
+
 
 import express from "express";
 import axios from "axios";
@@ -58,7 +58,14 @@ app.post("/", async (req, res) => {
 
     console.log("🚚 DOSTAVISTA REQUEST:", dostavistaPayload);
 
- const response = await axios.post(
+
+    
+console.log("🧪 AXIOS HEADERS:", {
+  "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
+  "Content-Type": "application/json"
+});
+
+const response = await axios.post(
   "https://robotapitest.dostavista.ru/api/business/1.5/create-order",
   dostavistaPayload,
   {
@@ -68,6 +75,7 @@ app.post("/", async (req, res) => {
     }
   }
 );
+
 
     
 
