@@ -54,8 +54,10 @@ const dostavistaPayload = {
   points: [
     {
       type: "source",
-      city_id: 1, // Москва
+      city_id: 1,
       address: shopAddress,
+      lat: 55.822515,
+      lng: 37.653844,
       contact_person: {
         name: "Магазин",
         phone: "+79999999999"
@@ -63,8 +65,10 @@ const dostavistaPayload = {
     },
     {
       type: "destination",
-      city_id: 1, // Москва
+      city_id: 1,
       address: cleanDeliveryAddress,
+      lat: 55.653844,
+      lng: 37.521515,
       contact_person: {
         name: customerName,
         phone: customerPhone
@@ -73,6 +77,7 @@ const dostavistaPayload = {
     }
   ]
 };
+
 
 
 
