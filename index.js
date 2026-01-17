@@ -6,7 +6,7 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Проверка, что сервер жив
+// health check
 app.get("/", (req, res) => {
   res.send("OK");
 });
@@ -16,10 +16,9 @@ app.post("/", async (req, res) => {
     console.log("📦 RAW TILDA DATA:");
     console.log(req.body);
 
-    // Парсим payment из Tilda
     if (!req.body.payment) {
       console.log("❌ payment not found");
-      return res.status(200).send("OK");
+      return res.send("OK");
     }
 
     const payment = JSON.parse(req.body.payment);
@@ -27,31 +26,30 @@ app.post("/", async (req, res) => {
     console.log("💳 PAYMENT DATA:");
     console.log(payment);
 
-    // Проверяем, что доставка — Достависта
+    // Проверка доставки
     if (!payment.delivery || !payment.delivery.includes("Достависта")) {
-      console.log("ℹ️ Not Dostavista delivery, skipping");
-      return res.status(200).send("OK");
+      console.log("ℹ️ Not Dostavista delivery");
+      return res.send("OK");
     }
 
     // Данные клиента
     const customerName =
       payment.delivery_fio || req.body.Name || "Клиент";
     const customerPhone = req.body.Phone || "+79999999999";
-    const deliveryAddress = payment.delivery_address;
+
+    // ❗ ЧИСТИМ АДРЕС
+    const deliveryAddress = payment.delivery_address
+      .replace(/^RU:\s*/i, "")
+      .trim();
+
     const deliveryComment = payment.delivery_comment || "";
 
-    if (!deliveryAddress) {
-      console.log("❌ delivery_address missing");
-      return res.status(200).send("OK");
-    }
-
-    // Формируем заказ для Dostavista
+    // ✅ ПРАВИЛЬНЫЙ PAYLOAD
     const dostavistaPayload = {
       matter: `Заказ №${payment.orderid}`,
-      vehicle_type: "courier", // ✅ ВАЖНО
+      vehicle_type: "courier",
       points: [
         {
-          // ✅ РЕАЛЬНЫЙ АДРЕС (замени потом на свой)
           address: "Москва, ул. Тверская, 1",
           contact_person: {
             name: "Магазин",
@@ -86,23 +84,21 @@ app.post("/", async (req, res) => {
     console.log("✅ DOSTAVISTA RESPONSE:");
     console.log(response.data);
 
-    res.status(200).send("OK");
+    res.send("OK");
   } catch (error) {
-    console.error("❌ ERROR:");
+    console.error("❌ ERROR");
 
     if (error.response) {
-      console.error("STATUS:", error.response.status);
-      console.error("DATA:", error.response.data);
+      console.error(error.response.status);
+      console.error(error.response.data);
     } else {
       console.error(error.message);
     }
 
-    // Tilda всегда должна получать 200
-    res.status(200).send("OK");
+    res.send("OK");
   }
 });
 
-// Render сам подставляет PORT
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
