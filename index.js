@@ -1,20 +1,29 @@
-console.log("🔥 VERSION: 2026-01-17 — FINAL");
-
+console.log("🔥 VERSION: 2026-01-17 — FINAL WORKING");
 
 import express from "express";
 import axios from "axios";
 
 const app = express();
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.get("/", (req, res) => res.send("OK"));
+app.get("/", (req, res) => {
+  res.send("OK");
+});
+
+function normalizePhone(phone) {
+  return phone.replace(/\D/g, "");
+}
 
 app.post("/", async (req, res) => {
   try {
     console.log("📦 RAW TILDA DATA:", req.body);
 
-    if (!req.body.payment) return res.status(200).send("OK");
+    if (!req.body.payment) {
+      console.log("❌ payment not found");
+      return res.status(200).send("OK");
+    }
 
     const payment = JSON.parse(req.body.payment);
     console.log("💳 PAYMENT DATA:", payment);
@@ -25,8 +34,8 @@ app.post("/", async (req, res) => {
     }
 
     const customerName = payment.delivery_fio || "Клиент";
-    const customerPhone = req.body.Phone;
-    const deliveryComment = payment.delivery_comment || "";
+    const customerPhone = normalizePhone(req.body.Phone);
+    const shopPhone = normalizePhone("79999999999");
 
     const cleanDeliveryAddress = payment.delivery_address
       .replace(/^RU:\s*/i, "")
@@ -34,63 +43,62 @@ app.post("/", async (req, res) => {
 
     const shopAddress = "Москва, улица Космонавтов, 22";
 
-  const dostavistaPayload = {const dostavistaPayload = {
-  matter: `Заказ №${payment.orderid}`,
-  vehicle_type_id: 6, // пеший курьер
-  points: [
-    {
-      address: shopAddress, // точка отправления
-      contact_person: {
-        name: "Магазин",
-        phone: "+79260000000" // валидный формат
-      }
-    },
-    {
-      address: cleanDeliveryAddress, // адрес доставки
-      contact_person: {
-        name: customerName,
-        phone: customerPhone.startsWith("+")
-          ? customerPhone
-          : `+7${customerPhone.replace(/\D/g, "")}` // безопасный E.164
-      },
-      note: deliveryComment
-    }
-  ]
-};
-
-
+    const dostavistaPayload = {
+      matter: `Заказ №${payment.orderid}`,
+      vehicle_type_id: 6, // пеший курьер
+      points: [
+        {
+          address: shopAddress,
+          contact_person: {
+            name: "Магазин",
+            phone: shopPhone
+          }
+        },
+        {
+          address: cleanDeliveryAddress,
+          contact_person: {
+            name: customerName,
+            phone: customerPhone
+          },
+          note: payment.delivery_comment || ""
+        }
+      ]
+    };
 
     console.log("🚚 DOSTAVISTA REQUEST:", dostavistaPayload);
+    console.log("🧪 AXIOS HEADERS:", {
+      "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY
+    });
 
-
-    
-console.log("🧪 AXIOS HEADERS:", {
-  "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
-  "Content-Type": "application/json"
-});
-
-const response = await axios.post(
-  "https://robotapitest.dostavista.ru/api/business/1.5/create-order",
-  dostavistaPayload,
-  {
-    headers: {
-      "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
-      "Content-Type": "application/json"
-    }
-  }
-);
-
-
-    
+    const response = await axios.post(
+      "https://robot.dostavista.ru/api/business/1.5/create-order",
+      dostavistaPayload,
+      {
+        headers: {
+          "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
     console.log("✅ DOSTAVISTA RESPONSE:", response.data);
     res.status(200).send("OK");
 
   } catch (error) {
-    console.error("❌ ERROR:", error.response?.data || error.message);
+    console.error("❌ ERROR:");
+
+    if (error.response) {
+      console.error("STATUS:", error.response.status);
+      console.error("DATA:", error.response.data);
+    } else {
+      console.error(error.message);
+    }
+
     res.status(200).send("OK");
   }
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("🚀 Server started on port", PORT));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("🚀 Server started on port", PORT);
+});
