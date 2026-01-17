@@ -47,23 +47,24 @@ app.post("/", async (req, res) => {
     const dostavistaPayload = {
       matter: `Заказ №${payment.orderid}`,
       vehicle_type_id: 6, // пеший курьер
-      points: [
-        {
-          address: cleanAddress,
-          contact_person: {
-            name: customerName,
-            phone: customerPhone
-          }
-        },
-        {
-          address: cleanAddress,
-          contact_person: {
-            name: customerName,
-            phone: customerPhone
-          },
-          note: deliveryComment
-        }
-      ]
+    points: [
+  {
+    address: shopAddress, // ТОЧКА А — МАГАЗИН
+    contact_person: {
+      name: "Магазин",
+      phone: "+79999999999"
+    }
+  },
+  {
+    address: deliveryAddress, // ТОЧКА B — КЛИЕНТ
+    contact_person: {
+      name: customerName,
+      phone: customerPhone
+    },
+    note: deliveryComment
+  }
+]
+
     };
 
     console.log("🚚 DOSTAVISTA REQUEST:");
