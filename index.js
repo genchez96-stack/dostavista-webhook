@@ -41,33 +41,39 @@ app.post("/", async (req, res) => {
     const deliveryComment = payment.delivery_comment || "";
 
     // 🔥 Чистим адрес от "RU:"
-    const cleanAddress = deliveryAddress.replace(/^RU:\s*/i, "").trim();
+ const cleanDeliveryAddress = payment.delivery_address
+  .replace(/^RU:\s*/i, "")
+  .trim();
     
 // Точка А — откуда забирает курьер (ОБЯЗАТЕЛЬНО реальный адрес)
 const shopAddress = "Москва, улица Космонавтов, 22";
 
-    const dostavistaPayload = {
-      matter: `Заказ №${payment.orderid}`,
-      vehicle_type_id: 6, // пеший курьер
-    points: [
-  {
-    address: shopAddress, // ТОЧКА А — МАГАЗИН
-    contact_person: {
-      name: "Магазин",
-      phone: "+79999999999"
-    }
-  },
-  {
-    address: deliveryAddress, // ТОЧКА B — КЛИЕНТ
-    contact_person: {
-      name: customerName,
-      phone: customerPhone
+const dostavistaPayload = {
+  matter: `Заказ №${payment.orderid}`,
+  vehicle_type_id: 6, // пеший курьер
+  points: [
+    {
+      type: "source", // 🔴 ОБЯЗАТЕЛЬНО
+      address: shopAddress,
+      contact_person: {
+        name: "Магазин",
+        phone: "+79999999999" // 🔴 формат +7...
+      }
     },
-    note: deliveryComment
-  }
-]
+    {
+      type: "destination", // 🔴 ОБЯЗАТЕЛЬНО
+      address: cleanDeliveryAddress,
+      contact_person: {
+        name: customerName,
+        phone: customerPhone.startsWith("+")
+          ? customerPhone
+          : `+7${customerPhone.replace(/\D/g, "")}`
+      },
+      note: deliveryComment
+    }
+  ]
+};
 
-    };
 
     console.log("🚚 DOSTAVISTA REQUEST:");
     console.log(dostavistaPayload);
