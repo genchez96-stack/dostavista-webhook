@@ -42,6 +42,7 @@ app.post("/", async (req, res) => {
 
     // 🔥 Чистим адрес от "RU:"
     const cleanAddress = deliveryAddress.replace(/^RU:\s*/i, "").trim();
+    
 
     const dostavistaPayload = {
       matter: `Заказ №${payment.orderid}`,
