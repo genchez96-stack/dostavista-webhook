@@ -34,27 +34,34 @@ app.post("/", async (req, res) => {
 
     const shopAddress = "Москва, улица Космонавтов, 22";
 
-    const dostavistaPayload = {
-      matter: `Заказ №${payment.orderid}`,
-      vehicle_type_id: 6, // пеший курьер
-      points: [
-        {
-          address: shopAddress,
-          contact_person: {
-            name: "Магазин",
-            phone: "+79999999999"
-          }
-        },
-        {
-          address: cleanDeliveryAddress,
-          contact_person: {
-            name: customerName,
-            phone: customerPhone
-          },
-          note: deliveryComment
-        }
-      ]
-    };
+  const dostavistaPayload = {
+  matter: `Заказ №${payment.orderid}`,
+  vehicle_type_id: 6, // пеший курьер
+  points: [
+    {
+      type: "source",
+      city_id: 1,
+      address: "Москва, улица Космонавтов, 22",
+      contact_person: {
+        name: "Магазин",
+        phone: "+79260000000" // ВАЛИДНЫЙ номер
+      }
+    },
+    {
+      type: "destination",
+      city_id: 1,
+      address: cleanDeliveryAddress,
+      contact_person: {
+        name: customerName,
+        phone: customerPhone.startsWith("+")
+          ? customerPhone
+          : `+7${customerPhone.replace(/\D/g, "")}`
+      },
+      note: deliveryComment
+    }
+  ]
+};
+
 
     console.log("🚚 DOSTAVISTA REQUEST:", dostavistaPayload);
 
