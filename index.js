@@ -43,6 +43,8 @@ app.post("/", async (req, res) => {
     // 🔥 Чистим адрес от "RU:"
     const cleanAddress = deliveryAddress.replace(/^RU:\s*/i, "").trim();
     
+// Точка А — откуда забирает курьер (ОБЯЗАТЕЛЬНО реальный адрес)
+const shopAddress = "Москва, улица Космонавтов, 22";
 
     const dostavistaPayload = {
       matter: `Заказ №${payment.orderid}`,
