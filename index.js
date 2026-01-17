@@ -1,5 +1,4 @@
 console.log("🔥 VERSION: 2026-01-17 — FINAL DOCS SAFE");
-console.log("AUTH TOKEN:", process.env.DOSTAVISTA_API_KEY); // Добавьте эту строку перед axios.post
 
 import express from "express";
 import axios from "axios";
@@ -35,14 +34,17 @@ app.post("/", async (req, res) => {
     }
 
     // Клиент
-    const customerName =
-      payment.delivery_fio || req.body.Name || "Клиент";
+    const customerName = payment.delivery_fio || req.body.Name || "Клиент";
     const customerPhone = req.body.Phone || "79999999999";
 
-    // Чистим адрес от RU:
-    const cleanDeliveryAddress = payment.delivery_address
+    // Чистим адрес от RU и лишних деталей
+    let cleanDeliveryAddress = payment.delivery_address
       .replace(/^RU:\s*/i, "")
       .trim();
+    // Упрощаем адрес для API
+    cleanDeliveryAddress = cleanDeliveryAddress
+      .replace(/, подъезд \d+, этаж \d+/g, "")
+      .replace(/, домофон: \w+/g, "");
 
     const deliveryComment = payment.delivery_comment || "";
 
@@ -52,7 +54,7 @@ app.post("/", async (req, res) => {
     // ===== DOSTAVISTA PAYLOAD (ПО ДОКУМЕНТАЦИИ) =====
     const dostavistaPayload = {
       matter: `Заказ №${payment.orderid}`,
-      vehicle_type_id: 6, // пеший курьер
+      vehicle_type_id: 6, // пеший курьер (проверьте в документации, допустимо ли число)
       points: [
         {
           type: "source",
@@ -74,7 +76,8 @@ app.post("/", async (req, res) => {
       ]
     };
 
-    console.log("🚚 DOSTAVISTA REQUEST:", JSON.stringify(dostavistaPayload, null, 2));
+    // Логируем сырой JSON перед отправкой
+    console.log("🚚 DOSTAVISTA REQUEST (RAW JSON):", JSON.stringify(dostavistaPayload, null, 2));
 
     console.log("🧪 AXIOS HEADERS:", {
       "X-DV-Auth-Token": process.env.DOSTAVISTA_API_KEY,
@@ -93,7 +96,6 @@ app.post("/", async (req, res) => {
     );
 
     console.log("✅ DOSTAVISTA RESPONSE:", response.data);
-
     res.status(200).send("OK");
   } catch (error) {
     console.error("❌ ERROR:");
@@ -101,6 +103,7 @@ app.post("/", async (req, res) => {
     if (error.response) {
       console.error("STATUS:", error.response.status);
       console.error("DATA:", error.response.data);
+      console.error("REQUEST BODY:", JSON.stringify(dostavistaPayload, null, 2)); // Логируем тело запроса при ошибке
     } else {
       console.error(error.message);
     }
@@ -114,4 +117,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
 });
-
