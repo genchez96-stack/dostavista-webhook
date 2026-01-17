@@ -1,3 +1,5 @@
+console.log("🔥 VERSION: 2026-01-17 18:45 — vehicle_type_id FIX");
+
 import express from "express";
 import axios from "axios";
 
