@@ -45,30 +45,30 @@ app.post("/", async (req, res) => {
     const shopAddress = "Москва, ул. Тверская, 1";
 
     // Формируем заказ для Dostavista
-    const dostavistaPayload = {
-      matter: `Заказ №${payment.orderid}`,
+// Чистим адрес от "RU:"
+const cleanAddress = address.replace(/^RU:\s*/i, "").trim();
 
-      // ✅ ПЕШИЙ КУРЬЕР
-      vehicle_type_id: 6,
-
-      points: [
-        {
-          address: shopAddress,
-          contact_person: {
-            name: "Магазин",
-            phone: "+79999999999"
-          }
-        },
-        {
-          address: deliveryAddress,
-          contact_person: {
-            name: customerName,
-            phone: customerPhone
-          },
-          note: deliveryComment
-        }
-      ]
-    };
+const dostavistaPayload = {
+  matter: `Заказ №${payment.orderid}`,
+  vehicle_type_id: 6, // пеший курьер
+  points: [
+    {
+      address: cleanAddress,
+      contact_person: {
+        name: customerName,
+        phone: customerPhone
+      }
+    },
+    {
+      address: cleanAddress,
+      contact_person: {
+        name: customerName,
+        phone: customerPhone
+      },
+      note: comment
+    }
+  ]
+};
 
     console.log("🚚 DOSTAVISTA REQUEST:");
     console.log(dostavistaPayload);
